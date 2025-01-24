@@ -1,0 +1,7 @@
+rrt_type: lazy # Can be selected from connect, extend, lazy, star
+step_size: 5
+is_random_world: False
+radius: 10
+samples: 4000
+show_benchmark_results: 0
+step_size: 5
