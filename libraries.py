@@ -123,17 +123,14 @@ def generate_random_node(world: World):
 
     return node
 
-def is_collided(node: Node, parent: Node, world: World):
-    if node.pt.x > world.width or node.pt.y > world.length or node.pt.z > world.height:
+def is_collided(pt1: Point, pt2: Point, world: World):
+    if pt1.x > world.width or pt1.y > world.length or pt1.z > world.height:
         return True
 
     for sigma in [0, 0.2, 0.4, 0.6, 0.8, 1.0]:
-        # Calculate the point p based on sigma
-        p = [sigma * node.pt.x + (1 - sigma) * parent.pt.x, sigma * node.pt.y + (1 - sigma) * parent.pt.y, sigma * node.pt.z + (1 - sigma) * parent.pt.z]
+        p = [sigma * pt1.x + (1 - sigma) * pt2.x, sigma * pt1.y + (1 - sigma) * pt2.y, sigma * pt1.z + (1 - sigma) * pt2.z]
         
-        # Check for collisions with each obstacle
         for obs in world.obstacles:
-            # Calculate the distance between p and the obstacle center
             dist = (p[0] - obs.x) ** 2 + (p[1] - obs.y) ** 2 + (p[2] - obs.z) ** 2
             
             if dist <= obs.radius * obs.radius:
@@ -159,6 +156,9 @@ def cost_np(from_node: Node, to_point: Point):
 def line_cost(from_node, to_point):
     return (from_node - to_point).norm()
 
+def is_reached(node, end_node, seg_length, world):
+    return (node - end_node).norm() < seg_length and is_collided(node.pt, end_node.pt, world) == False
+
 def find_min_path(tree, end_node):
     # Find nodes that connect to the end_node
     connecting_nodes = []
@@ -167,6 +167,9 @@ def find_min_path(tree, end_node):
             connecting_nodes.append(node)
 
     # Find the minimum cost node among connecting nodes
+    if not connecting_nodes:
+        return []
+    
     idx = 0
     cost = connecting_nodes[0].cost
     for i in range(1, len(connecting_nodes)):
