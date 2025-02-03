@@ -14,35 +14,42 @@ class Point:
     def norm(self):
         return (self.x * self.x + self.y * self.y + self.z * self.z) ** 0.5
     
-    def __add__(self, dest):
-        if isinstance(dest, Point):
-            return Point(self.x + dest.x, self.y + dest.y, self.y + dest.y)
-        if isinstance(dest, Node):
-            return self.__sub__(dest.pt)
+    def __add__(self, other):
+        if isinstance(other, Point):
+            return Point(self.x + other.x, self.y + other.y, self.y + other.y)
+        if isinstance(other, Node):
+            return self.__sub__(other.pt)
         raise("Type not supported")
     
-    def __sub__(self, dest):
-        if isinstance(dest, Point):
-            return Point(self.x - dest.x, self.y - dest.y, self.y - dest.y)
-        if isinstance(dest, Node):
-            return self.__sub__(dest.pt)
+    def __sub__(self, other):
+        if isinstance(other, Point):
+            return Point(self.x - other.x, self.y - other.y, self.y - other.y)
+        if isinstance(other, Node):
+            return self.__sub__(other.pt)
         raise("Type not supported")
     
-    def __mul__(self, dest):
-        if isinstance(dest, (int, float)):
-            return Point(self.x * dest, self.y * dest, self.z * dest)
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return Point(self.x * other, self.y * other, self.z * other)
         raise("Type not supported")
     
-    def __truediv__(self, dest):
-        if isinstance(dest, (int, float)):
-            return Point(self.x / dest, self.y / dest, self.z / dest)
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            return Point(self.x / other, self.y / other, self.z / other)
         raise("Type not supported")
 
-    def dist_to(self, dest):
-        if isinstance(dest, Point):
-            return (self - dest).norm()
-        if isinstance(dest, Node):
-            return (self - dest.pt).norm()
+    def dist_to(self, other):
+        if isinstance(other, Point):
+            return (self - other).norm()
+        if isinstance(other, Node):
+            return (self - other.pt).norm()
+        raise("Type not supported")
+    
+    def dot(self, other):
+        if isinstance(other, Point):
+            return self.x * other.x + self.y + other.y + self.z * other.z
+        if isinstance(other, Node):
+            return self.x * other.pt.x + self.y + other.pt.y + self.z * other.pt.z
         raise("Type not supported")
     
 class Obstacle:
@@ -60,11 +67,11 @@ class Node:
         self.cost = cost
         self.parent = parent
 
-    def __sub__(self, dest):
-        if isinstance(dest, Point):
-            return Point(self.pt.x - dest.x, self.pt.y - dest.y, self.pt.z - dest.z)
-        if isinstance(dest, Node):
-            return self.__sub__(dest.pt)
+    def __sub__(self, other):
+        if isinstance(other, Point):
+            return Point(self.pt.x - other.x, self.pt.y - other.y, self.pt.z - other.z)
+        if isinstance(other, Node):
+            return self.__sub__(other.pt)
         raise("Type not supported")
 
 class World:
