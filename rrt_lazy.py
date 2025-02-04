@@ -12,11 +12,8 @@ def run_lazy_rrt(config, world, start_node, end_node):
   
     # find path with minimum cost to end_node
     lazy_path = rrt_lib.find_min_path(tree, end_node)
-    path = repair_lazy_path(lazy_path, config["step_size"], world)
-    if config["show_rrt_result"] == True:
-        rrt_lib.plot_result(world, tree, path)
 
-    return path
+    return repair_lazy_path(lazy_path, config["step_size"], world)
 
 def repair_lazy_path(lazy_path, step_size, world):
     path = []

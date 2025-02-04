@@ -3,7 +3,6 @@ uav_size: 1
 rrt_type: lazy # Can be selected from connect, extend, lazy, star
 step_size: 5
 is_random_world: False
-show_rrt_result: False
 obstacles_num: 100 # Only works when is_random_world is True
 world_size: 100
 samples: 4000 # Only for RRT star

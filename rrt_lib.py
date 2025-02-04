@@ -1,88 +1,19 @@
 import random
-import matplotlib.pyplot as plt
-import numpy as np
+import rrt_lazy
+import rrt_connect
+import rrt_extend
+import rrt_star
+import structs
 
-class Point:
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
-    def __iter__(self):
-        return [self.x, self.y, self.z]
+def initialise_world(config):
+    world_size = config['world_size']
+    if config['is_random_world'] == True:
+        return create_random_world(config["obstalces_num"], world_size, world_size, world_size)
     
-    def norm(self):
-        return (self.x * self.x + self.y * self.y + self.z * self.z) ** 0.5
-    
-    def __add__(self, other):
-        if isinstance(other, Point):
-            return Point(self.x + other.x, self.y + other.y, self.y + other.y)
-        if isinstance(other, Node):
-            return self.__sub__(other.pt)
-        raise("Type not supported")
-    
-    def __sub__(self, other):
-        if isinstance(other, Point):
-            return Point(self.x - other.x, self.y - other.y, self.y - other.y)
-        if isinstance(other, Node):
-            return self.__sub__(other.pt)
-        raise("Type not supported")
-    
-    def __mul__(self, other):
-        if isinstance(other, (int, float)):
-            return Point(self.x * other, self.y * other, self.z * other)
-        raise("Type not supported")
-    
-    def __truediv__(self, other):
-        if isinstance(other, (int, float)):
-            return Point(self.x / other, self.y / other, self.z / other)
-        raise("Type not supported")
-
-    def dist_to(self, other):
-        if isinstance(other, Point):
-            return (self - other).norm()
-        if isinstance(other, Node):
-            return (self - other.pt).norm()
-        raise("Type not supported")
-    
-    def dot(self, other):
-        if isinstance(other, Point):
-            return self.x * other.x + self.y + other.y + self.z * other.z
-        if isinstance(other, Node):
-            return self.x * other.pt.x + self.y + other.pt.y + self.z * other.pt.z
-        raise("Type not supported")
-    
-class Obstacle:
-    def __init__(self, x, y, z, radius):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.radius = radius
-
-class Node:
-    def __init__(self, x, y, z, chi=-1, cost=0, parent=-1):
-        self.pt = Point(x, y, z)
-
-        self.chi = chi
-        self.cost = cost
-        self.parent = parent
-
-    def __sub__(self, other):
-        if isinstance(other, Point):
-            return Point(self.pt.x - other.x, self.pt.y - other.y, self.pt.z - other.z)
-        if isinstance(other, Node):
-            return self.__sub__(other.pt)
-        raise("Type not supported")
-
-class World:
-    def __init__(self, width, length,  height):
-        self.width = width
-        self.length = length
-        self.height = height
-        self.obstacles = []
+    return create_world(world_size, world_size, world_size)
 
 def create_random_world(obstacles_num, length, width, height):
-    world = World(length, width, height)
+    world = structs.World(length, width, height)
     max_radius = 5 * min([length, width, height]) / obstacles_num
     
     for i in range(obstacles_num):
@@ -92,12 +23,12 @@ def create_random_world(obstacles_num, length, width, height):
         cy = radius + (length - 2 * radius) * random.random()
         cz = radius + (height - 2 * radius) * random.random()
 
-        world.obstacles.append(Obstacle(cx, cy, cz, radius))
+        world.obstacles.append(structs.Obstacle(cx, cy, cz, radius))
 
     return world
 
 def create_world(length, width, height): 
-    world = World(length, width, height)
+    world = structs.World(length, width, height)
 
     min_edge = min([length, width, height])
     max_edge = min([length, width, height])
@@ -117,20 +48,38 @@ def create_world(length, width, height):
         cy = ay * dy[i]
         cz = az * dz[i]
 
-        world.obstacles.append(Obstacle(cx, cy, cz, maxRadius))
+        world.obstacles.append(structs.Obstacle(cx, cy, cz, maxRadius))
     
     return world
 
-def generate_random_node(world: World): 
-    node = Node(world.width * random.random(), world.length * random.random(), world.height * random.random())
+def find_path_by_rrt(uav, world, config):
+    start_node = structs.Node(uav.start_pt.x, uav.start_pt.y, uav.start_pt.z)
+    end_node = structs.Node(uav.end_pt.x, uav.end_pt.y, uav.end_pt.z)
+
+    if config['rrt_type'] == 'lazy':
+        return rrt_lazy.run_lazy_rrt(config, world, start_node, end_node)
+
+    if config['rrt_type'] == 'connect':
+        return rrt_connect.run_rrt_connect(config, world, start_node, end_node)
+
+    if config['rrt_type'] == 'extend':
+        return rrt_extend.run_rrt_extend(config, world, start_node, end_node)
+
+    if config['rrt_type'] == 'star':
+        return rrt_star.run_rrt_star(config, world, start_node, end_node)
+
+    print("Invalid RRT type!")
+
+def generate_random_node(world: structs.World): 
+    node = structs.Node(world.width * random.random(), world.length * random.random(), world.height * random.random())
     
     # check collision with obstacle
     while is_collided(node, node, world):
-        node = Node(world.width * random.random(), world.length * random.random(), world.height * random.random())
+        node = structs.Node(world.width * random.random(), world.length * random.random(), world.height * random.random())
 
     return node
 
-def is_collided(pt1: Point, pt2: Point, world: World):
+def is_collided(pt1: structs.Point, pt2: structs.Point, world: structs.World):
     if pt1.x > world.width or pt1.y > world.length or pt1.z > world.height:
         return True
 
@@ -145,7 +94,7 @@ def is_collided(pt1: Point, pt2: Point, world: World):
     
     return False
 
-def find_closet_node(pt: Point, tree):
+def find_closet_node(pt: structs.Point, tree):
     idx = 0
     dist = pt.dist_to(tree[0])
 
@@ -157,7 +106,7 @@ def find_closet_node(pt: Point, tree):
 
     return idx
 
-def cost_np(from_node: Node, to_point: Point):
+def cost_np(from_node: structs.Node, to_point: structs.Point):
     return from_node.cost + (from_node - to_point).norm()
 
 def line_cost(from_node, to_point):
@@ -194,52 +143,3 @@ def find_min_path(tree, end_node):
         path.insert(0, tree[parent_id])  # Prepend the parent node to the path
 
     return path
-
-def plot_result(world: World, tree, path):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    ax.set_xlim(0, world.width)
-    ax.set_ylim(0, world.length)
-    ax.set_zlim(0, world.height)
-
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
-    ax.set_title('RRT Algorithm (3D)')
-
-    # Plot obstacles
-    for obs in world.obstacles:
-        u, v = np.mgrid[0:2 * np.pi:10j, 0:np.pi:10j]
-        X = obs.radius * np.sin(v) * np.cos(u)
-        Y = obs.radius * np.sin(v) * np.sin(u)
-        Z = obs.radius * np.cos(v)
-        ax.plot_surface(X + obs.x, Y + obs.y, Z + obs.z, color=[0.5, 0.2, 0.3])
-
-    idx = len(tree) - 1  # Start from the last node index
-    for idx in range(len(tree) - 1, -1, -1):
-        branch = []
-        node = tree[idx]  # Current node
-        branch.append(node)  # Add current node to the branch
-        
-        parent_id = node.parent
-        while parent_id > 0:  # Iterate until reaching the root node
-            branch.append(tree[parent_id])  # Add parent node
-            parent_id = tree[parent_id].parent  # Get the parent of the current node
-
-        # Extract X, Y, Z coordinates
-        X = [node.pt.x for node in branch]
-        Y = [node.pt.y for node in branch]
-        Z = [node.pt.z for node in branch]
-
-        ax.plot(X, Y, Z, color='red', linewidth=0.5, marker='.', markeredgecolor='green')
-
-    # Plot the path
-    ax.plot([node.pt.x for node in path], [node.pt.y for node in path], [node.pt.z for node in path], color='black', linewidth=3)
-
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
-    ax.set_title('Expanded Tree (3D)')
-    plt.grid(True)
-    plt.show()

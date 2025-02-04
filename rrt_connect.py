@@ -12,11 +12,7 @@ def run_rrt_connect(config, world, start_node, end_node):
         while not is_found:
             tree, is_found = extend_tree(tree, end_node, config["step_size"], world)
 
-    path = rrt_lib.find_min_path(tree, end_node)
-    if config["show_rrt_result"] == True:
-        rrt_lib.plot_result(world, tree, path)
-
-    return path
+    return rrt_lib.find_min_path(tree, end_node)
 
 def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
     is_success = False

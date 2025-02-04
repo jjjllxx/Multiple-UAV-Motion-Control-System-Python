@@ -28,8 +28,6 @@ def run_rrt_star(config, world, start_node, end_node):
 
     for i in range(len(trees)):
         path = rrt_lib.find_min_path(trees[i], end_node)
-        if config["show_rrt_result"] == True:
-            rrt_lib.plot_result(world, trees[i], path) if path else print(f"COULD NOT FIND A CONNECTING TREE TILL {i + 1}/{div}th SAMPLES SO NOT DRAWING PATH")
 
     return path
         
