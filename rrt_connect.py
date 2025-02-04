@@ -1,27 +1,24 @@
 import rrt_lib
 import random
 
-def run_rrt_connect(seg_length, is_random_world):
-    world = rrt_lib.create_random_world(100, 100, 100, 100) if is_random_world == True else rrt_lib.create_world(100, 100, 100)
-
-    start_node = rrt_lib.Node(5, 5, 5)
-    end_node = rrt_lib.Node(95, 95, 95)
-
+def run_rrt_connect(config, world, start_node, end_node):
     tree = [start_node]
 
     # check to see if start_node connects directly to end_node
-    if rrt_lib.is_reached(start_node, end_node, seg_length, world) == True:
+    if rrt_lib.is_reached(start_node, end_node, config["step_size"], world) == True:
         path = [start_node, end_node]
     else:
         is_found = False
         while not is_found:
-            tree, is_found = extend_tree(tree,end_node,seg_length,world)
+            tree, is_found = extend_tree(tree, end_node, config["step_size"], world)
 
     path = rrt_lib.find_min_path(tree, end_node)
+    if config["show_rrt_result"] == True:
+        rrt_lib.plot_result(world, tree, path)
 
-    rrt_lib.plot_result(world, tree, path)
+    return path
 
-def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
+def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
     is_success = False
 
     random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
@@ -33,7 +30,7 @@ def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
     has_collision = False
 
     while (new_pt - random_pt).norm() > 0 and has_collision == False:
-        if (new_pt - random_pt).norm() < seg_length:
+        if (new_pt - random_pt).norm() < step_size:
             has_collision = rrt_lib.is_collided(random_pt, tree[min_parent_idx].pt, world)
             if has_collision == False:
                 
@@ -42,12 +39,12 @@ def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
                 tree.append(new_node)
                 has_collision = True
                
-                if rrt_lib.is_reached(new_node, end_node, seg_length, world) == True:
+                if rrt_lib.is_reached(new_node, end_node, step_size, world) == True:
                     tree[-1].chi = 0
                     is_success = True
         else:
             new_pt = random_pt - tree[min_parent_idx]
-            new_pt = tree[min_parent_idx].pt + (new_pt / new_pt.norm()) * seg_length
+            new_pt = tree[min_parent_idx].pt + (new_pt / new_pt.norm()) * step_size
             
             min_cost  = rrt_lib.cost_np(tree[min_parent_idx], new_pt)
             new_node  = rrt_lib.Node(new_pt.x, new_pt.y, new_pt.z, -1, min_cost, min_parent_idx)
@@ -58,7 +55,7 @@ def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
                 tree.append(new_node)
                 min_parent_idx = len(tree) - 1
                 
-                if rrt_lib.is_reached(new_node, end_node, seg_length, world) == True:
+                if rrt_lib.is_reached(new_node, end_node, step_size, world) == True:
                     tree[-1].chi = 0  # mark node as connecting to end.
                     has_collision = True
                     is_success = True

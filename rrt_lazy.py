@@ -1,27 +1,24 @@
 import rrt_lib
 import random
 
-def run_lazy_rrt(seg_length, is_random_world):
-    world = rrt_lib.create_random_world(100, 100, 100, 100) if is_random_world == True else rrt_lib.create_world(100, 100, 100)
-
-    start_node = rrt_lib.Node(5, 5, 5)
-    end_node = rrt_lib.Node(95, 95, 95)
-
+def run_lazy_rrt(config, world, start_node, end_node):
     tree = [start_node]
 
     # check to see if start_node connects directly to end_node
-    if rrt_lib.is_reached(start_node, end_node, seg_length, world) == True:
+    if rrt_lib.is_reached(start_node, end_node, config["step_size"], world) == True:
         path = [start_node, end_node]
     else:
-        tree = extend_lazy_tree(tree, end_node, seg_length, world)
+        tree = extend_lazy_tree(tree, end_node, config["step_size"], world)
   
     # find path with minimum cost to end_node
     lazy_path = rrt_lib.find_min_path(tree, end_node)
-    path = repair_lazy_path(lazy_path, seg_length, world)
+    path = repair_lazy_path(lazy_path, config["step_size"], world)
+    if config["show_rrt_result"] == True:
+        rrt_lib.plot_result(world, tree, path)
 
-    rrt_lib.plot_result(world, tree, path)
+    return path
 
-def repair_lazy_path(lazy_path, seg_length, world):
+def repair_lazy_path(lazy_path, step_size, world):
     path = []
 
     is_start = False
@@ -40,7 +37,7 @@ def repair_lazy_path(lazy_path, seg_length, world):
             is_end = False
             tree = [start_collision_node]
             end_node = lazy_path[i]
-            tree = extend_tree(tree, end_node, seg_length, world)
+            tree = extend_tree(tree, end_node, step_size, world)
 
             path += rrt_lib.find_min_path(tree, end_node)
             
@@ -50,7 +47,7 @@ def repair_lazy_path(lazy_path, seg_length, world):
 
     return path
 
-def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
+def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
     while True:
         while True:
             random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
@@ -58,7 +55,7 @@ def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
             idx = rrt_lib.find_closet_node(random_pt, tree)
             
             new_point = random_pt - tree[idx]
-            new_point = tree[idx].pt + (new_point / new_point.norm()) * seg_length
+            new_point = tree[idx].pt + (new_point / new_point.norm()) * step_size
             
             min_cost  = rrt_lib.cost_np(tree[idx], new_point)
             new_node  = rrt_lib.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
@@ -67,25 +64,25 @@ def extend_tree(tree, end_node, seg_length, world: rrt_lib.World):
                 tree.append(new_node)
                 break
         
-        if rrt_lib.is_reached(new_node, end_node, seg_length, world) == True:
+        if rrt_lib.is_reached(new_node, end_node, step_size, world) == True:
             tree[-1].chi = 0
             return tree
     
-def extend_lazy_tree(tree, end_node, seg_length, world: rrt_lib.World):
+def extend_lazy_tree(tree, end_node, step_size, world: rrt_lib.World):
     while True:
         random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random())
 
         idx = rrt_lib.find_closet_node(random_pt, tree)
         
         new_point = random_pt - tree[idx]
-        new_point = tree[idx].pt + (new_point / new_point.norm()) * seg_length
+        new_point = tree[idx].pt + (new_point / new_point.norm()) * step_size
         
         min_cost  = rrt_lib.cost_np(tree[idx], new_point)
         new_node  = rrt_lib.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
 
         tree.append(new_node)
 
-        if rrt_lib.is_reached(new_node, end_node, seg_length, world) == True:
+        if rrt_lib.is_reached(new_node, end_node, step_size, world) == True:
             tree[-1].chi = 0
 
             return tree

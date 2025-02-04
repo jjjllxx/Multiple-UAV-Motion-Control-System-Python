@@ -81,11 +81,11 @@ class World:
         self.height = height
         self.obstacles = []
 
-def create_random_world(NumObstacles, length, width, height):
+def create_random_world(obstacles_num, length, width, height):
     world = World(length, width, height)
-    max_radius = 5 * min([length, width, height]) / NumObstacles
+    max_radius = 5 * min([length, width, height]) / obstacles_num
     
-    for i in range(NumObstacles):
+    for i in range(obstacles_num):
 
         radius = max_radius * random.random()
         cx = radius + (width - 2 * radius) * random.random()
@@ -163,8 +163,8 @@ def cost_np(from_node: Node, to_point: Point):
 def line_cost(from_node, to_point):
     return (from_node - to_point).norm()
 
-def is_reached(node, end_node, seg_length, world):
-    return (node - end_node).norm() < seg_length and is_collided(node.pt, end_node.pt, world) == False
+def is_reached(node, end_node, step_size, world):
+    return (node - end_node).norm() < step_size and is_collided(node.pt, end_node.pt, world) == False
 
 def find_min_path(tree, end_node):
     # Find nodes that connect to the end_node
