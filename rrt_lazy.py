@@ -1,5 +1,6 @@
 import rrt_lib
 import random
+import structs
 
 def run_lazy_rrt(config, world, start_node, end_node):
     tree = [start_node]
@@ -44,10 +45,10 @@ def repair_lazy_path(lazy_path, step_size, world):
 
     return path
 
-def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
+def extend_tree(tree, end_node, step_size, world: structs.World):
     while True:
         while True:
-            random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
+            random_pt = structs.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
 
             idx = rrt_lib.find_closet_node(random_pt, tree)
             
@@ -55,7 +56,7 @@ def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
             new_point = tree[idx].pt + (new_point / new_point.norm()) * step_size
             
             min_cost  = rrt_lib.cost_np(tree[idx], new_point)
-            new_node  = rrt_lib.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
+            new_node  = structs.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
             
             if rrt_lib.is_collided(new_node.pt, tree[idx].pt, world) == False:
                 tree.append(new_node)
@@ -65,9 +66,9 @@ def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
             tree[-1].chi = 0
             return tree
     
-def extend_lazy_tree(tree, end_node, step_size, world: rrt_lib.World):
+def extend_lazy_tree(tree, end_node, step_size, world: structs.World):
     while True:
-        random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random())
+        random_pt = structs.Point(world.width * random.random(), world.length * random.random(), world.height * random.random())
 
         idx = rrt_lib.find_closet_node(random_pt, tree)
         
@@ -75,7 +76,7 @@ def extend_lazy_tree(tree, end_node, step_size, world: rrt_lib.World):
         new_point = tree[idx].pt + (new_point / new_point.norm()) * step_size
         
         min_cost  = rrt_lib.cost_np(tree[idx], new_point)
-        new_node  = rrt_lib.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
+        new_node  = structs.Node(new_point.x, new_point.y, new_point.z, -1, min_cost, idx)
 
         tree.append(new_node)
 

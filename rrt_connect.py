@@ -1,5 +1,6 @@
 import rrt_lib
 import random
+import structs
 
 def run_rrt_connect(config, world, start_node, end_node):
     tree = [start_node]
@@ -14,10 +15,10 @@ def run_rrt_connect(config, world, start_node, end_node):
 
     return rrt_lib.find_min_path(tree, end_node)
 
-def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
+def extend_tree(tree, end_node, step_size, world: structs.World):
     is_success = False
 
-    random_pt = rrt_lib.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
+    random_pt = structs.Point(world.width * random.random(), world.length * random.random(), world.height * random.random()) 
 
     min_parent_idx = rrt_lib.find_closet_node(random_pt, tree)
 
@@ -31,7 +32,7 @@ def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
             if has_collision == False:
                 
                 min_cost  = rrt_lib.cost_np(tree[min_parent_idx], random_pt)
-                new_node  = rrt_lib.Node(random_pt.x, random_pt.y, random_pt.z, -1, min_cost, min_parent_idx)
+                new_node  = structs.Node(random_pt.x, random_pt.y, random_pt.z, -1, min_cost, min_parent_idx)
                 tree.append(new_node)
                 has_collision = True
                
@@ -43,7 +44,7 @@ def extend_tree(tree, end_node, step_size, world: rrt_lib.World):
             new_pt = tree[min_parent_idx].pt + (new_pt / new_pt.norm()) * step_size
             
             min_cost  = rrt_lib.cost_np(tree[min_parent_idx], new_pt)
-            new_node  = rrt_lib.Node(new_pt.x, new_pt.y, new_pt.z, -1, min_cost, min_parent_idx)
+            new_node  = structs.Node(new_pt.x, new_pt.y, new_pt.z, -1, min_cost, min_parent_idx)
             
             has_collision = rrt_lib.is_collided(new_node.pt, tree[min_parent_idx].pt, world)
             

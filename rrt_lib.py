@@ -57,18 +57,22 @@ def find_path_by_rrt(uav, world, config):
     end_node = structs.Node(uav.end_pt.x, uav.end_pt.y, uav.end_pt.z)
 
     if config['rrt_type'] == 'lazy':
-        return rrt_lazy.run_lazy_rrt(config, world, start_node, end_node)
+        path = rrt_lazy.run_lazy_rrt(config, world, start_node, end_node)
+    elif config['rrt_type'] == 'connect':
+        path = rrt_connect.run_rrt_connect(config, world, start_node, end_node)
+    elif config['rrt_type'] == 'extend':
+        path = rrt_extend.run_rrt_extend(config, world, start_node, end_node)
+    elif config['rrt_type'] == 'star':
+        path = rrt_star.run_rrt_star(config, world, start_node, end_node)
+    else:
+        print("Invalid RRT type!")
+        return
 
-    if config['rrt_type'] == 'connect':
-        return rrt_connect.run_rrt_connect(config, world, start_node, end_node)
+    pts = []
+    for node in path:
+        pts.append(node.pt)
 
-    if config['rrt_type'] == 'extend':
-        return rrt_extend.run_rrt_extend(config, world, start_node, end_node)
-
-    if config['rrt_type'] == 'star':
-        return rrt_star.run_rrt_star(config, world, start_node, end_node)
-
-    print("Invalid RRT type!")
+    return pts
 
 def generate_random_node(world: structs.World): 
     node = structs.Node(world.width * random.random(), world.length * random.random(), world.height * random.random())
