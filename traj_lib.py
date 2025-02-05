@@ -1,10 +1,8 @@
 import numpy as np
-import rrt_lib
+import structs
 
-def generate_traj(path):
+def find_key_pts(path):
     path_size = len(path)
-    
-    # Record inflection points
     key_pts = [(0, path[0])]
     
     for i in range(1, path_size - 1):
@@ -13,8 +11,10 @@ def generate_traj(path):
             key_pts.append((i, path[i]))
 
     key_pts.append((path_size - 1, path[-1]))
-   
-    # Calculate coefficient
+
+    return key_pts
+
+def generate_traj(key_pts):   
     coef_x = np.zeros((4, len(key_pts)))
     coef_y = np.zeros((4, len(key_pts)))
     coef_z = np.zeros((4, len(key_pts)))
@@ -24,31 +24,17 @@ def generate_traj(path):
         coef_x[:, i] = solve_coef(key_pts[i][1].x, key_pts[i + 1][1].x, time_diff)
         coef_y[:, i] = solve_coef(key_pts[i][1].y, key_pts[i + 1][1].y, time_diff)
         coef_z[:, i] = solve_coef(key_pts[i][1].z, key_pts[i + 1][1].z, time_diff)
-
-    # Calculate location of each second
-    traj = []
-    part = 0
-    for i in range(path_size):
-        if i > key_pts[part][0]:
-            part += 1
-        time_diff = i - key_pts[part][0]
-
-        traj_pt = rrt_lib.Point(np.dot(coef_x[:, part], [time_diff**3, time_diff**2, time_diff, 1]),
-                                np.dot(coef_y[:, part], [time_diff**3, time_diff**2, time_diff, 1]),
-                                np.dot(coef_z[:, part], [time_diff**3, time_diff**2, time_diff, 1]))
-        traj.append(traj_pt)
     
-    return key_pts, traj
+    return calc_traj(key_pts, coef_x, coef_y, coef_z)
 
 def slow_traj(key_pts, col_time):
-    pts_num = len(key_pts)
     pos = 0
     up = len(col_time)
     coef_x = np.zeros((4, len(key_pts)))
     coef_y = np.zeros((4, len(key_pts)))
     coef_z = np.zeros((4, len(key_pts)))
     
-    for i in range(pts_num - 1):
+    for i in range(len(key_pts) - 1):
         while pos < up and col_time[pos] < key_pts[i + 1]:
             pos += 1
         key_pts[0, i + 1] += pos - 2
@@ -57,24 +43,38 @@ def slow_traj(key_pts, col_time):
         coef_x[:, i] = solve_coef(key_pts[i][1].x, key_pts[i + 1][1].x, time_diff)
         coef_y[:, i] = solve_coef(key_pts[i][1].y, key_pts[i + 1][1].y, time_diff)
         coef_z[:, i] = solve_coef(key_pts[i][1].z, key_pts[i + 1][1].z, time_diff)
-
     
-    path_num = int(key_pts[pts_num - 1][0])
+    return calc_traj(key_pts, coef_x, coef_y, coef_z)
+
+def calc_traj(key_pts, coef_x, coef_y, coef_z):
     traj = []
     part = 0
-    
-    for i in range(path_num):
+    for i in range(key_pts[-1][0] + 1):
         if i > key_pts[part][0]:
             part += 1
         time_diff = i - key_pts[part][0]
-        traj_pt = rrt_lib.Point(
+        traj_pt = structs.Point(
             np.dot(coef_x[:, part], [time_diff**3, time_diff**2, time_diff, 1]),
             np.dot(coef_y[:, part], [time_diff**3, time_diff**2, time_diff, 1]),
             np.dot(coef_z[:, part], [time_diff**3, time_diff**2, time_diff, 1])
         )
         traj.append(traj_pt)
     
-    return key_pts, traj
+    return traj
+
+def control_multi_collision(all_traj, all_key_pts, col_limit):
+    new_trajs = [all_traj[0]]
+    
+    for i in range(len(all_traj) - 1):
+        col_time = record_collision_time(all_traj[i], all_traj[i + 1], col_limit)
+        
+        if len(col_time) > 1:
+            slowed_traj = slow_traj(all_key_pts[i + 1], col_time)
+            new_trajs.append(slowed_traj)
+        else:
+            new_trajs.append(all_traj[i + 1])
+    
+    return new_trajs
 
 def record_collision_time(traj1, traj2, col_thresh):
     period = min(len(traj1), len(traj2))
@@ -96,7 +96,7 @@ def solve_coef(coords, next_coords, time_diff):
     
     return np.linalg.solve(c, d)
 
-def cal_min_dist_between_segs(p1: rrt_lib.Point, p2: rrt_lib.Point, q1: rrt_lib.Point, q2: rrt_lib.Point):
+def calc_seg_dist(p1: structs.Point, p2: structs.Point, q1: structs.Point, q2: structs.Point):
     s1 = p2 - p1
     s2 = q2 - q1
     
@@ -162,7 +162,7 @@ def cal_min_dist_between_segs(p1: rrt_lib.Point, p2: rrt_lib.Point, q1: rrt_lib.
 def is_path_collided(path1, path2, col_thres):
     for i in range(len(path1) - 1):
         for j in range(len(path2) - 1):
-            dist, col_pt = cal_min_dist_between_segs(path1[i], path1[i + 1], path2[j], path2[j + 1])
+            dist, col_pt = calc_seg_dist(path1[i], path1[i + 1], path2[j], path2[j + 1])
             if dist < col_thres:
                 return i, col_pt
 
