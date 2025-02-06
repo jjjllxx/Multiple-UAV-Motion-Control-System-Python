@@ -35,10 +35,10 @@ def slow_traj(key_pts, col_time):
     coef_z = np.zeros((4, len(key_pts)))
     
     for i in range(len(key_pts) - 1):
-        while pos < up and col_time[pos] < key_pts[i + 1]:
+        while pos < up and col_time[pos] < key_pts[i + 1][0]:
             pos += 1
-        key_pts[0, i + 1] += pos - 2
-        
+
+        key_pts[i + 1] = (key_pts[i + 1][0] + pos - 2, key_pts[i + 1][1])        
         time_diff = key_pts[i + 1][0] - key_pts[i][0]
         coef_x[:, i] = solve_coef(key_pts[i][1].x, key_pts[i + 1][1].x, time_diff)
         coef_y[:, i] = solve_coef(key_pts[i][1].y, key_pts[i + 1][1].y, time_diff)
@@ -50,7 +50,7 @@ def calc_traj(key_pts, coef_x, coef_y, coef_z):
     traj = []
     part = 0
     for i in range(key_pts[-1][0] + 1):
-        if i > key_pts[part][0]:
+        if i > key_pts[part + 1][0]:
             part += 1
         time_diff = i - key_pts[part][0]
         traj_pt = structs.Point(
@@ -81,7 +81,7 @@ def record_collision_time(traj1, traj2, col_thresh):
     col_time = []
     for i in range(period):
         if traj1[i].dist_to(traj2[i]) < col_thresh:
-            col_time.append[i]
+            col_time.append(i)
     
     return col_time
 
