@@ -30,20 +30,22 @@ def main():
 
     world = rrt_lib.initialise_world(config)
     uavs = initialise_uavs(config["uav_num"], world)
+    paths = [rrt_lib.find_path_by_rrt(uav, world, config) for uav in uavs]
 
-    paths = []
-    trajs = []
-    for uav in uavs:
-        paths.append(rrt_lib.find_path_by_rrt(uav, world, config))
-        key_pts = traj_lib.find_key_pts(paths[-1])
-        trajs.append(traj_lib.generate_traj(key_pts))
+
+    all_key_pts = [traj_lib.find_key_pts(path) for path in paths]
+    trajs = [traj_lib.generate_traj(key_pts) for key_pts in all_key_pts]
+
+    COLLISION_LIMIT = config["uav_size"] * 3
+    new_trajs = traj_lib.control_multi_collision(trajs, all_key_pts, COLLISION_LIMIT)
+
+    plot_lib.show_old_new(trajs[1], new_trajs[1])
 
     for path in paths:
         plot_lib.plot_result(world, path)
-
-    plot_lib.plot_traj_xyz(trajs)
-
-    plot_lib.save_traj_gif(world, trajs)
+        
+    plot_lib.plot_traj_xyz(new_trajs)
+    plot_lib.save_traj_gif(world, new_trajs)
 
 if __name__ == '__main__':
     main()
